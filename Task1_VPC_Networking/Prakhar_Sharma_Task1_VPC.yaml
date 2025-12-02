@@ -1,0 +1,175 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Task 1 - VPC with 2 Public Subnets, 2 Private Subnets, IGW, NAT Gateway - Prakhar_Sharma"
+
+Resources:
+
+  # --------------------------
+  # VPC
+  # --------------------------
+  PrakharSharmaVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_VPC
+
+  # --------------------------
+  # Internet Gateway
+  # --------------------------
+  PrakharSharmaIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_IGW
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref PrakharSharmaIGW
+      VpcId: !Ref PrakharSharmaVPC
+
+  # --------------------------
+  # Public Subnets
+  # --------------------------
+  PrakharSharmaPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrakharSharmaVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: ap-south-1a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_Public_Subnet_1
+
+  PrakharSharmaPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrakharSharmaVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: ap-south-1b
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_Public_Subnet_2
+
+  # --------------------------
+  # Private Subnets
+  # --------------------------
+  PrakharSharmaPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrakharSharmaVPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: ap-south-1a
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_Private_Subnet_1
+
+  PrakharSharmaPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrakharSharmaVPC
+      CidrBlock: 10.0.4.0/24
+      AvailabilityZone: ap-south-1b
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_Private_Subnet_2
+
+  # --------------------------
+  # NAT Gateway + EIP
+  # --------------------------
+  PrakharSharmaNatEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_NAT_EIP
+
+  PrakharSharmaNatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt PrakharSharmaNatEIP.AllocationId
+      SubnetId: !Ref PrakharSharmaPublicSubnet1
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_NAT_Gateway
+
+  # --------------------------
+  # Public Route Table
+  # --------------------------
+  PrakharSharmaPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrakharSharmaVPC
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_Public_RouteTable
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrakharSharmaPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PrakharSharmaIGW
+
+  PublicSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrakharSharmaPublicSubnet1
+      RouteTableId: !Ref PrakharSharmaPublicRouteTable
+
+  PublicSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrakharSharmaPublicSubnet2
+      RouteTableId: !Ref PrakharSharmaPublicRouteTable
+
+  # --------------------------
+  # Private Route Table
+  # --------------------------
+  PrakharSharmaPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrakharSharmaVPC
+      Tags:
+        - Key: Name
+          Value: Prakhar_Sharma_Private_RouteTable
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrakharSharmaPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref PrakharSharmaNatGateway
+
+  PrivateSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrakharSharmaPrivateSubnet1
+      RouteTableId: !Ref PrakharSharmaPrivateRouteTable
+
+  PrivateSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrakharSharmaPrivateSubnet2
+      RouteTableId: !Ref PrakharSharmaPrivateRouteTable
+
+
+Outputs:
+  VPCId:
+    Description: VPC ID
+    Value: !Ref PrakharSharmaVPC
+
+  PublicSubnets:
+    Description: Public Subnet IDs
+    Value: !Join [ ",", [ !Ref PrakharSharmaPublicSubnet1, !Ref PrakharSharmaPublicSubnet2 ] ]
+
+  PrivateSubnets:
+    Description: Private Subnet IDs
+    Value: !Join [ ",", [ !Ref PrakharSharmaPrivateSubnet1, !Ref PrakharSharmaPrivateSubnet2 ] ]
